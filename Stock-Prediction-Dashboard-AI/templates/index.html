@@ -1,0 +1,235 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Prediction Dashboard</title>
+    
+    <!-- External CSS Libraries -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container dashboard-container animate__animated animate__fadeIn">
+        <h1 class="dashboard-title">Stock Analysis & Prediction Dashboard</h1>
+        
+        <div class="row">
+            <div class="col-lg-3">
+                <div class="input-section animate__animated animate__fadeInLeft">
+                    <div class="mb-3">
+                        <label for="ticker" class="form-label">
+                            <i class="fas fa-search"></i> Stock Ticker
+                        </label>
+                        <input type="text" class="form-control" id="ticker" placeholder="Enter stock symbol (e.g., AAPL)" autocomplete="off">
+                        <div id="suggestions" class="autocomplete-suggestions"></div>
+                    </div>
+
+                    <button id="predict" class="btn btn-predict mb-3">
+                        <i class="fas fa-chart-line me-2"></i> Analyze Stock
+                    </button>
+
+                    <div class="stock-metrics mb-3">
+                        <div class="stats-card">
+                            <div class="metric-value" id="current-price">-</div>
+                            <div class="metric-label">Current Price</div>
+                        </div>
+                        <div class="stats-card">
+                            <div class="metric-value" id="predicted-change">-</div>
+                            <div class="metric-label">Predicted Change</div>
+                        </div>
+                    </div>
+
+                    <div class="stock-table">
+                        <h5 class="p-3 mb-0 border-bottom"><i class="fas fa-history"></i> Historical Data</h5>
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Open</th>
+                                    <th>Close</th>
+                                    <th>High</th>
+                                    <th>Low</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-9">
+                <div id="loading">
+                    <div class="loader">
+                        <i class="fas fa-spinner"></i>
+                        <p>Analyzing stock data...</p>
+                    </div>
+                </div>
+                
+                <div class="chart-container animate__animated animate__fadeInRight">
+                    <div id="line-chart"></div>
+                </div>
+                
+                <div class="chart-container animate__animated animate__fadeInRight">
+                    <div id="bar-chart"></div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-md-4">
+                        <div class="stats-card">
+                            <div class="metric-value" id="accuracy">-</div>
+                            <div class="metric-label">Model Accuracy</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stats-card">
+                            <div class="metric-value" id="mse">-</div>
+                            <div class="metric-label">Mean Square Error</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stats-card">
+                            <div class="metric-value" id="trend">-</div>
+                            <div class="metric-label">Trend Direction</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Explainer Sidebar -->
+    <div id="explainer-sidebar" class="explainer-sidebar">
+        <div class="explainer-close" id="explainer-close">
+            <i class="fas fa-times"></i>
+        </div>
+        <div class="explainer-header">
+            <i class="fas fa-lightbulb"></i>
+            <h4>AI Explainer</h4>
+        </div>
+
+        <!-- Summary -->
+        <div class="explainer-section">
+            <div class="explainer-section-title">
+                <i class="fas fa-brain"></i> Model Summary
+            </div>
+            <div id="explainer-summary" class="explainer-item">-</div>
+        </div>
+
+        <!-- Feature Importance -->
+        <div class="explainer-section">
+            <div class="explainer-section-title">
+                <i class="fas fa-chart-bar"></i> Feature Importance
+            </div>
+            <div id="feature-importance-container"></div>
+        </div>
+
+        <!-- Technical Analysis -->
+        <div class="explainer-section">
+            <div class="explainer-section-title">
+                <i class="fas fa-magnifying-glass"></i> Technical Analysis
+            </div>
+            <div id="explainer-technical"></div>
+        </div>
+
+        <!-- Model Reasoning -->
+        <div class="explainer-section">
+            <div class="explainer-section-title">
+                <i class="fas fa-cogs"></i> Model Reasoning
+            </div>
+            <div id="explainer-reasoning"></div>
+        </div>
+
+        <!-- Prediction Factors -->
+        <div class="explainer-section">
+            <div class="explainer-section-title">
+                <i class="fas fa-key"></i> Key Factors
+            </div>
+            <div id="explainer-factors"></div>
+        </div>
+    </div>
+
+    <!-- Explainer Toggle Button -->
+    <button id="explainer-toggle" class="explainer-toggle" title="Show AI Explanation">
+        <i class="fas fa-lightbulb"></i>
+    </button>
+
+    <!-- Stock Analysis Report Panel -->
+    <div id="analysis-report" class="analysis-report">
+        <div class="report-close" id="report-close">
+            <i class="fas fa-times"></i>
+        </div>
+        <div class="report-header">
+            <i class="fas fa-file-alt"></i>
+            <h4>Stock Analysis Report</h4>
+        </div>
+
+        <div id="stock-badge-container"></div>
+
+        <!-- Executive Summary -->
+        <div class="report-section">
+            <div class="report-section-title">
+                <i class="fas fa-newspaper"></i> Executive Summary
+            </div>
+            <div id="report-summary" class="report-content">-</div>
+        </div>
+
+        <!-- Historical Performance -->
+        <div class="report-section">
+            <div class="report-section-title">
+                <i class="fas fa-history"></i> Historical Performance Analysis
+            </div>
+            <div id="report-historical" class="report-content">-</div>
+        </div>
+
+        <!-- Technical Indicators -->
+        <div class="report-section">
+            <div class="report-section-title">
+                <i class="fas fa-chart-line"></i> Technical Indicators Analysis
+            </div>
+            <div id="report-technical" class="report-content">-</div>
+        </div>
+
+        <!-- Price Prediction Reasoning -->
+        <div class="report-section">
+            <div class="report-section-title">
+                <i class="fas fa-lightbulb"></i> Price Prediction Reasoning
+            </div>
+            <div id="report-reasoning" class="report-content">-</div>
+        </div>
+
+        <!-- Risk Assessment -->
+        <div class="report-section">
+            <div class="report-section-title">
+                <i class="fas fa-exclamation-triangle"></i> Risk Assessment
+            </div>
+            <div id="report-risk" class="report-content">-</div>
+        </div>
+
+        <!-- Investment Perspective -->
+        <div class="report-section">
+            <div class="report-section-title">
+                <i class="fas fa-telescope"></i> Short-term Outlook
+            </div>
+            <div id="report-outlook" class="report-content">-</div>
+        </div>
+    </div>
+
+    <!-- Report Toggle Button (Chart Icon) -->
+    <button id="report-toggle" class="report-toggle" title="Show Analysis Report">
+        <i class="fas fa-file-alt"></i>
+    </button>
+
+    <div id="notification" class="notification"></div>
+
+    <!-- External JavaScript Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.18.2/plotly.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
